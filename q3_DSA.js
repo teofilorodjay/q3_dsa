@@ -1,132 +1,187 @@
-// Sample data for sellers and products
-const sellers = [
-    { username: "seller1", password: "pass1" },
-    { username: "seller2", password: "pass2" }
+// User authentication and product management for a kiosk ordering system
+// user data for authentication
+const user = [
+    { username: 'seller', password: 'pass123' }
 ];
 
-const categories = {
+//products categorized by type
+const products = {
     Pasta: [
-        { name: "Spaghetti", price: 30  },
-        { name: "Carbonara", price: 35 },
-        { name: "Lasagne", price: 350 }
+        { name: 'Spaghetti', price: 25 },
+        { name: 'Carbonara', price: 30 },
+        { name: 'Lasagna', price: 100 }
     ],
     Desserts: [
-        { name: "Ice Cream", price: 50 },
-        { name: "Cake", price: 50 },
-        { name: "Brownie", price: 35 }
+        { name: 'Cheesecake', price: 55 },
+        { name: 'Brownie', price: 45 },
+        { name: 'Ice Cream', price: 30 }
     ],
     Drinks: [
-        { name: "Soft drinks", price: 20},
-        { name: "Water", price: 15 },
-        { name: "Juice", price: 15 }
+        { name: 'Soda', price: 18 },
+        { name: 'Juice', price: 15 },
+        { name: 'Water', price: 10 }
     ]
 };
 
-// Cart for customers
+// Cart for customers to store their selected items
 let cart = [];
 
-// Function to authenticate sellers
-function authenticate(username, password) {
-    return sellers.some(seller => seller.username === username && seller.password === password);
+// Function to authenticate seller
+function authenticateSeller() {
+    const username = prompt("Enter username:");
+    const password = prompt("Enter password:");
+    
+    // Check if the entered username and password match any user
+    return user.some(user => user.username === username && user.password === password);
 }
 
-// Function to add item to category
-function addItemToCategory(category, name, price) {
-    categories[category].push({ name, price });
+// Function to add an item to the cart
+function addToCart(category) {
+    // Check if the category exists
+    if (products[category]) {
+        const itemName = prompt(`Choose an item from ${category}: ${products[category].map(item => item.name).join(', ')}`);
+        const quantityInput = prompt("Enter quantity:");
+
+        // Validate that the user didn't cancel the prompt
+        if (quantityInput !== null) {
+            const quantity = parseInt(quantityInput);
+
+            // Validate quantity input
+            if (!isNaN(quantity) && quantity > 0) {
+                // Find the selected item in the products
+                const selectedItem = products[category].find(item => item.name === itemName);
+                if (selectedItem) {
+                    // Check if the item is already in the cart
+                    const existingItem = cart.find(item => item.name === selectedItem.name);
+                    if (existingItem) {
+                        // Update quantity if item exists in the cart
+                        existingItem.quantity += quantity;
+                    } else {
+                        // Add new item to the cart
+                        cart.push({ name: selectedItem.name, price: selectedItem.price, quantity });
+                    }
+                    alert(`${quantity} ${selectedItem.name}(s) added to cart.`);
+                } else {
+                    alert("Item not found!"); // Item not found in the selected category
+                }
+            } else {
+                alert("Please enter a valid quantity."); // Invalid quantity input
+            }
+        }
+    } else {
+        alert("Invalid category!"); // Invalid category input
+    }
 }
 
-// Function to remove item from category
-function removeItemFromCategory(category, name) {
-    categories[category] = categories[category].filter(item => item.name !== name);
+// Function to remove an item from a specific product category
+function removeItem(category) {
+    if (products[category]) {
+        const name = prompt("Enter item name to remove:");
+        // Filter out the item with the specified name from the category
+        products[category] = products[category].filter(item => item.name !== name);
+        alert(`${name} has been removed from ${category}.`);
+    } else {
+        alert("Invalid category!");
+    }
 }
 
-// Function to print cart contents
+// Function to print the contents of the cart
 function printCart() {
+    console.log("Your Cart:");
+    let total = 0; // Initialize total price
     if (cart.length === 0) {
-        console.log("Cart is empty.");
+        console.log("Your cart is empty."); // Notify if the cart is empty
+    } else {
+        // Loop through cart items and display their details
+        cart.forEach(item => {
+            console.log(`${item.name} - Price: ${item.price} - Quantity: ${item.quantity}`);
+            total += item.price * item.quantity; // Calculate total price
+        });
+        console.log(`Total Price: ${total}`); // Display total price
+    }
+}
+
+// Function to checkout
+function checkout() {
+    if (cart.length === 0) {
+        alert("Your cart is empty. Please add items before checking out.");
         return;
     }
-    let total = 0;
-    cart.forEach(item => {
-        console.log(`Item: ${item.name}, Price: ${item.price}, Quantity: ${item.quantity}, Total: ${item.price * item.quantity}`);
-        total += item.price * item.quantity;
-    });
-    console.log(`Total Price: ${total}`);
+    printCart();
+    alert("Thank you for your purchase!");
+    cart = []; // Clear the cart after checkout
 }
 
-// Function to sort cart items by name
+// Function to sort cart items by name (simple bubble sort)
 function sortCart() {
-    cart.sort((a, b) => a.name.localeCompare(b.name));
+    for (let i = 0; i < cart.length - 1; i++) {
+        for (let j = 0; j < cart.length - i - 1; j++) {
+            if (cart[j].name > cart[j + 1].name) {
+                // Swap items if they are in the wrong order
+                [cart[j], cart[j + 1]] = [cart[j + 1], cart[j]];
+            }
+        }
+    }
 }
 
 // Main program loop
-function kiosk() {
+function main() {
     while (true) {
         const userType = prompt("Are you a SELLER or CUSTOMER?").toUpperCase();
         
-        if (userType === "SELLER") {
-            const username = prompt("Enter username:");
-            const password = prompt("Enter password:");
-            
-            if (authenticate(username, password)) {
+        // Seller actions
+        if (userType === 'SELLER') {
+            if (authenticateSeller()) {
                 while (true) {
-                    const action = prompt("Choose: LOGOUT, ADD, REMOVE").toUpperCase();
-                    
-                    if (action === "LOGOUT") break;
-                    
-                    const category = prompt("Enter category (Pasta, Desserts, Drinks):");
-                    
-                    if (action === "ADD") {
-                        const name = prompt("Enter item name:");
-                        const price = parseFloat(prompt("Enter item price:"));
-                        addItemToCategory(category, name, price);
-                        const continueAdding = prompt("Continue adding items? (yes/no)").toLowerCase();
-                        if (continueAdding !== "yes") continue;
-                    } else if (action === "REMOVE") {
-                        const name = prompt("Enter item name to remove:");
-                        removeItemFromCategory(category, name);
-                        const continueRemoving = prompt("Continue removing items? (yes/no)").toLowerCase();
-                        if (continueRemoving !== "yes") continue;
+                    const action = prompt("Choose: LOGOUT, ADD, REMOVE, PRINT").toUpperCase();
+
+                    // Log out if requested
+                    if (action === 'LOGOUT') break;
+
+                    const category = prompt("Which CATEGORY? (Pasta, Desserts, Drinks)").trim();
+
+                    // Perform actions based on user input
+                    if (action === 'ADD') {
+                        addToCart(category); // Call the updated add function
+                    } else if (action === 'REMOVE') {
+                        removeItem(category); // Remove item from category
+                    } else if (action === 'PRINT') {
+                        printCart(); // Print cart contents
+                    } else {
+                        alert("Invalid action! Please choose again.");
                     }
                 }
             } else {
-                console.log("Authentication failed.");
+                alert("Authentication failed!"); // Notify on authentication failure
             }
-        } else if (userType === "CUSTOMER") {
+        } 
+        // Customer actions
+        else if (userType === 'CUSTOMER') {
             while (true) {
-                const customerAction = prompt("Choose: ORDER, CART, CANCEL").toUpperCase();
-                
-                if (customerAction === "CANCEL") break;
-                
-                if (customerAction === "ORDER") {
-                    const category = prompt("Choose category (Pasta, Desserts, Drinks):");
-                    const itemName = prompt("Choose item:");
-                    const quantity = parseInt(prompt("Enter quantity:"));
-                    const item = categories[category].find(item => item.name === itemName);
-                    
-                    if (item) {
-                        cart.push({ name: item.name, price: item.price, quantity });
-                    } else {
-                        console.log("Item not found.");
+                const action = prompt("Choose: VIEW PRODUCTS, ADD TO CART, VIEW CART, CHECKOUT, LOGOUT").toUpperCase();
+
+                // Log out if requested
+                if (action === 'LOGOUT') break;
+
+                if (action === 'VIEW PRODUCTS') {
+                    console.log("Available Products:");
+                    for (const category in products) {
+                        console.log(`${category}: ${products[category].map(item => item.name).join(', ')}`);
                     }
-                } else if (customerAction === "CART") {
-                    while (true) {
-                        const cartAction = prompt("Choose: PRINT, ADD, REMOVE, CANCEL").toUpperCase();
-                        
-                        if (cartAction === "CANCEL") break;
-                        
-                        if (cartAction === "PRINT") {
-                            printCart();
-                        } else if (cartAction === "REMOVE") {
-                            const itemName = prompt("Enter item name to remove:");
-                            cart = cart.filter(item => item.name !== itemName);
-                        }
-                    }
+                } else if (action === 'ADD TO CART') {
+                    const category = prompt("Which CATEGORY? (Pasta, Desserts, Drinks)").trim();
+                    addToCart(category); // Call the add to cart function
+                } else if (action === 'VIEW CART') {
+                    printCart(); // Print cart contents
+                } else if (action === 'CHECKOUT') {
+                    checkout(); // Proceed to checkout
+                } else {
+                    alert("Invalid action! Please choose again.");
                 }
             }
         }
     }
 }
 
-// Start the kiosk program
-kiosk();
+// Start the program
+main();
